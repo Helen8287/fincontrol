@@ -1,0 +1,98 @@
+{% extends 'finances/base.html' %}
+
+{% block title %}Операции{% endblock %}
+{% block page_title %}Все операции{% endblock %}
+
+{% block content %}
+<!-- Фильтры -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Дата от</label>
+                <input type="date" name="start_date" class="form-control" value="{{ filters.start_date }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Дата до</label>
+                <input type="date" name="end_date" class="form-control" value="{{ filters.end_date }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Категория</label>
+                <select name="category" class="form-select">
+                    <option value="">Все</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if filters.category == cat.id|stringformat:"s" %}selected{% endif %}>
+                            {{ cat.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Тип</label>
+                <select name="type" class="form-select">
+                    <option value="">Все</option>
+                    <option value="income" {% if filters.type == 'income' %}selected{% endif %}>Доход</option>
+                    <option value="expense" {% if filters.type == 'expense' %}selected{% endif %}>Расход</option>
+                </select>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Применить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Таблица операций -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Тип</th>
+                        <th>Категория</th>
+                        <th>Описание</th>
+                        <th class="text-end">Сумма</th>
+                        <th class="text-center">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                        <tr>
+                            <td>{{ transaction.date|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                <span class="badge bg-{% if transaction.type == 'income' %}success{% else %}danger{% endif %}">
+                                    {{ transaction.get_type_display }}
+                                </span>
+                            </td>
+                            <td>{{ transaction.category.name }}</td>
+                            <td>{{ transaction.description|default:"—" }}</td>
+                            <td class="text-end fw-bold {% if transaction.type == 'income' %}text-success{% else %}text-danger{% endif %}">
+                                {{ transaction.amount|floatformat:2 }} ₽
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'finances:edit_transaction' transaction.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'finances:delete_transaction' transaction.id %}" 
+                                   class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('Удалить операцию?')">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox fs-1 d-block"></i>
+                                Нет операций
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

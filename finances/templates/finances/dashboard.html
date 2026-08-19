@@ -1,0 +1,125 @@
+{% extends 'finances/base.html' %}
+
+{% block title %}Панель управления{% endblock %}
+{% block page_title %}Панель управления{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Статистика -->
+    <div class="col-md-4 mb-3">
+        <div class="card stat-card income">
+            <div class="card-body">
+                <h6>Доходы</h6>
+                <h3 class="mb-0">+{{ total_income|floatformat:2 }} ₽</h3>
+                <small>за месяц</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card stat-card expense">
+            <div class="card-body">
+                <h6>Расходы</h6>
+                <h3 class="mb-0">-{{ total_expense|floatformat:2 }} ₽</h3>
+                <small>за месяц</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card stat-card balance">
+            <div class="card-body">
+                <h6>Баланс</h6>
+                <h3 class="mb-0">{{ balance|floatformat:2 }} ₽</h3>
+                <small>за месяц</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Добавление операции -->
+    <div class="col-md-5 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">➕ Добавить операцию</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'finances:add_transaction' %}">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <div class="text-danger small">{{ field.errors }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-plus-circle"></i> Добавить
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Последние операции -->
+    <div class="col-md-7 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">📋 Последние операции</h5>
+                <a href="{% url 'finances:transactions' %}" class="btn btn-sm btn-outline-primary">Все операции</a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_transactions %}
+                    <div class="list-group list-group-flush">
+                        {% for transaction in recent_transactions %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-{% if transaction.type == 'income' %}success{% else %}danger{% endif %} me-2">
+                                        {{ transaction.get_type_display }}
+                                    </span>
+                                    <strong>{{ transaction.category.name }}</strong>
+                                    <small class="text-muted d-block">{{ transaction.description|default:"Без описания" }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="fw-bold {% if transaction.type == 'income' %}text-success{% else %}text-danger{% endif %}">
+                                        {{ transaction.amount|floatformat:2 }} ₽
+                                    </span>
+                                    <br>
+                                    <small class="text-muted">{{ transaction.date|date:"d.m.Y H:i" }}</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox fs-1 d-block"></i>
+                        Нет операций
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Уведомления -->
+{% if notifications %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <i class="bi bi-bell"></i> Уведомления
+                </div>
+                <div class="card-body">
+                    {% for notification in notifications %}
+                        <div class="alert alert-{{ notification.type }} mb-2">
+                            {{ notification.message }}
+                            <small class="d-block text-muted">{{ notification.created_at|date:"d.m.Y H:i" }}</small>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

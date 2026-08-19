@@ -1,0 +1,39 @@
+{% extends 'finances/base.html' %}
+
+{% block title %}Подключение Telegram{% endblock %}
+{% block page_title %}Подключение Telegram{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="bi bi-telegram display-1 text-primary"></i>
+                <h4 class="mt-3">Подключите Telegram бота</h4>
+                <p class="text-muted">
+                    Получайте уведомления и управляйте финансами через Telegram
+                </p>
+                <hr>
+                <div class="alert alert-info">
+                    <ol class="text-start mb-0">
+                        <li>Напишите боту <code>@FinControlBot</code></li>
+                        <li>Отправьте команду <code>/start</code></li>
+                        <li>Введите ваш Telegram ID ниже</li>
+                    </ol>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Ваш Telegram ID</label>
+                        <input type="text" name="telegram_id" class="form-control" 
+                               placeholder="Например: 123456789" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-link-45deg"></i> Подключить
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

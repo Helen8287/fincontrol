@@ -1,0 +1,197 @@
+{% extends 'finances/base.html' %}
+
+{% block title %}Аналитика{% endblock %}
+{% block page_title %}Аналитика{% endblock %}
+
+{% block content %}
+<!-- Период -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="btn-group" role="group">
+            <a href="?period=week" class="btn btn-outline-primary {% if current_period == 'week' %}active{% endif %}">Неделя</a>
+            <a href="?period=month" class="btn btn-outline-primary {% if current_period == 'month' %}active{% endif %}">Месяц</a>
+            <a href="?period=year" class="btn btn-outline-primary {% if current_period == 'year' %}active{% endif %}">Год</a>
+        </div>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card income">
+            <div class="card-body">
+                <h6>Доходы</h6>
+                <h3 class="mb-0">+{{ total_income|floatformat:2 }} ₽</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card expense">
+            <div class="card-body">
+                <h6>Расходы</h6>
+                <h3 class="mb-0">-{{ total_expense|floatformat:2 }} ₽</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card balance">
+            <div class="card-body">
+                <h6>Баланс</h6>
+                <h3 class="mb-0">{{ balance|floatformat:2 }} ₽</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Графики -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Динамика доходов и расходов</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="trendChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Распределение расходов</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Рекомендации и аномалии -->
+<div class="row">
+    {% if recommendations %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <i class="bi bi-lightbulb"></i> Рекомендации
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        {% for rec in recommendations %}
+                            <li class="mb-2"><i class="bi bi-check-circle-fill text-info"></i> {{ rec }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if anomalies %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <i class="bi bi-exclamation-triangle"></i> Аномалии
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        {% for anomaly in anomalies %}
+                            <li class="mb-2">
+                                <i class="bi bi-exclamation-circle-fill text-warning"></i>
+                                {{ anomaly.message }}
+                                <small class="d-block text-muted">{{ anomaly.date|date:"d.m.Y" }}</small>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+{% block extra_js %}
+<script>
+    // График динамики
+    const ctxTrend = document.getElementById('trendChart').getContext('2d');
+    const incomeData = {{ income_data|safe }};
+    const expenseData = {{ expense_data|safe }};
+
+    const dates = [...new Set([...incomeData.map(d => d.date), ...expenseData.map(d => d.date)])].sort();
+
+    const incomeMap = {};
+    incomeData.forEach(d => { incomeMap[d.date] = d.amount; });
+    const expenseMap = {};
+    expenseData.forEach(d => { expenseMap[d.date] = d.amount; });
+
+    const incomeValues = dates.map(d => incomeMap[d] || 0);
+    const expenseValues = dates.map(d => expenseMap[d] || 0);
+
+    new Chart(ctxTrend, {
+        type: 'line',
+        data: {
+            labels: dates.map(d => new Date(d).toLocaleDateString('ru-RU')),
+            datasets: [
+                {
+                    label: 'Доходы',
+                    data: incomeValues,
+                    borderColor: '#38ef7d',
+                    backgroundColor: 'rgba(56, 239, 125, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Расходы',
+                    data: expenseValues,
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Круговая диаграмма категорий
+    const ctxCategory = document.getElementById('categoryChart').getContext('2d');
+    const categoryData = {{ category_data|safe }};
+
+    new Chart(ctxCategory, {
+        type: 'doughnut',
+        data: {
+            labels: categoryData.map(d => d.category__name),
+            datasets: [{
+                data: categoryData.map(d => d.total),
+                backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                    '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        font: { size: 10 }
+                    }
+                }
+            }
+        }
+    });
+    </script>
+{% endblock %}
+
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends 'finances/base.html' %}
+
+{% block title %}Категории{% endblock %}
+{% block page_title %}Управление категориями{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">➕ Добавить категорию</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <div class="text-danger small">{{ field.errors }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-plus-circle"></i> Добавить
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">📋 Список категорий</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Тип</th>
+                                <th>Системная</th>
+                                <th class="text-center">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category in categories %}
+                                <tr>
+                                    <td>{{ category.name }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if category.type == 'income' %}success{% else %}danger{% endif %}">
+                                            {{ category.get_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if category.is_default %}
+                                            <span class="badge bg-secondary">Системная</span>
+                                        {% else %}
+                                            <span class="badge bg-light text-dark">Пользовательская</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if not category.is_default and category.user == request.user %}
+                                            <a href="{% url 'finances:delete_category' category.id %}" 
+                                               class="btn btn-sm btn-outline-danger"
+                                               onclick="return confirm('Удалить категорию?')">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">
+                                        <i class="bi bi-tags fs-1 d-block"></i>
+                                        Нет категорий
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
